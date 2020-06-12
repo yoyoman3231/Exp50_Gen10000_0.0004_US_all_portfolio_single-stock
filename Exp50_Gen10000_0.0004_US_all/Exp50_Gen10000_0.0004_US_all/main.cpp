@@ -1,4 +1,4 @@
-/*美股市值前20大50大DJI測試*/
+/*美股市值前20大DJI測試*/
 #include <iostream>
 #include <fstream>
 #include <sstream>
