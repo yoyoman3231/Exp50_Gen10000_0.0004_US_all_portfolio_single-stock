@@ -1,5 +1,5 @@
 /*美股市值前20大、美股市值前50大、道瓊30、各單檔趨勢值*/
-/*跑投資組合時,記得把單檔關掉1*/
+/*跑投資組合時,記得把單檔關掉*/
 #include <iostream>
 #include <fstream>
 #include <sstream>
