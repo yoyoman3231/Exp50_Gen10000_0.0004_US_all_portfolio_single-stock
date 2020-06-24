@@ -1,10 +1,12 @@
-/*美股市值前20大DJI測試*/
+/*美股市值前20大、美股市值前50大、道瓊30、各單檔趨勢值*/
+/*跑投資組合時,記得把單檔關掉1*/
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <iomanip>
 #include <time.h>
+#include <algorithm>
 using namespace std;
 
 ifstream input_file;
@@ -18,8 +20,12 @@ int index;
 int test_index;
 //read_file
 
+const int partical_num = 50;
+const int generation = 1;
+const int experiment_time = 1;
+const int file_num = 8;
 double beta[50];
-double partical[10][90000];
+int partical[partical_num][90000];
 //int profolio[50];//投資組合
 //initial
 
@@ -71,7 +77,7 @@ double r1;
 double trend_ratio;//趨勢值
 double test_trend_ratio;
 double final_test_trend_ratio;
-double all_trend_ratio[10];
+double all_trend_ratio[partical_num];
 //fitness
 
 double theta = 0.0004;
@@ -88,10 +94,8 @@ int t;
 int i, j, k, a;
 int kind[50];
 //double n;
-int n[50];//算選的投資組合有幾個
-int partical_num = 10;
-int generation = 10000;
-int experiment_time = 50;
+int n[partical_num];//算選的投資組合有幾個
+
 int s_stock_index = 0;//train stock num
 int test_stock_index = 0;
 
@@ -103,29 +107,28 @@ int test_day;
 double all_max = 0;
 int all_max_solution[10000];
 double random;
-int file_num = 120;
 double Gbest[50];
 double all_max_tmp[50];
 double Gbest_max;
 int best_experimrentime;
 int best_generation;
-double real_all_trend_ratio[50][10000][10];
-double real_yi[50][10000][10];
+double real_all_trend_ratio[experiment_time][generation][partical_num];
+double real_yi[experiment_time][generation][partical_num];
 double Gbest_yi;
 int Gbest_num;//Gbest的出現次數
-int final_n[50][10000][10];//存最佳解檔數
+int final_n[experiment_time][generation][partical_num];//存最佳解檔數
 int Gbest_n;//Gbest選到的檔數
 int Gbest_i;
-int selection_stock_no[10][50];
-int real_partical[50][10][50];
+int selection_stock_no[partical_num][50];
+int real_partical[50][partical_num][50];
 string final_portfolio[50];
 int all_buy_lots[50];//存可買張數的陣列
 int last_test_all_buy_paper[50];
 int test_all_buy_lots[50];
-int all_share_money[10];//存分配資金的陣列
-int test_all_share_money[10];
-int compare_share_money[50][10000][10];//存每次實驗每個世代每個粒子的分配資金陣列
-int compare_buy_lots[50][10][50];//存每個實驗中的組合股票可買張數
+int all_share_money[partical_num];//存分配資金的陣列
+int test_all_share_money[partical_num];
+int compare_share_money[experiment_time][generation][partical_num];//存每次實驗每個世代每個粒子的分配資金陣列
+int compare_buy_lots[50][partical_num][50];//存每個實驗中的組合股票可買張數
 int Gbest_share_money;
 int Gbest_buy_lots[50];//Gbest組合中股票可買的張數
 double real_all_remain_fund[50];
@@ -412,7 +415,7 @@ string H2M_testDJI[] = { "test_2010_01(2009 Q1).csv", "test_2010_02(2009 Q1).csv
 "test_2014_09(2014 Q1).csv", "test_2014_10(2014 Q1).csv", "test_2014_11(2014 Q1).csv", "test_2014_12(2014 Q1).csv", "test_2015_01(2014 Q1).csv", "test_2015_02(2014 Q1).csv", "test_2015_03(2014 Q1).csv", "test_2015_04(2014 Q1).csv", "test_2015_05(2014 Q1).csv", "test_2015_06(2014 Q1).csv", "test_2015_07(2015 Q1).csv", "test_2015_08(2015 Q1).csv", "test_2015_09(2015 Q1).csv", "test_2015_10(2015 Q1).csv", "test_2015_11(2015 Q1).csv", "test_2015_12(2015 Q1).csv", "test_2016_01(2015 Q1).csv", "test_2016_02(2015 Q1).csv", "test_2016_03(2015 Q1).csv",
 "test_2016_04(2015 Q1).csv", "test_2016_05(2015 Q1).csv", "test_2016_06(2015 Q1).csv", "test_2016_07(2016 Q1).csv", "test_2016_08(2016 Q1).csv", "test_2016_09(2016 Q1).csv", "test_2016_10(2016 Q1).csv", "test_2016_11(2016 Q1).csv", "test_2016_12(2016 Q1).csv", "test_2017_01(2016 Q1).csv", "test_2017_02(2016 Q1).csv", "test_2017_03(2016 Q1).csv", "test_2017_04(2016 Q1).csv", "test_2017_05(2016 Q1).csv", "test_2017_06(2016 Q1).csv", "test_2017_07(2017 Q1).csv", "test_2017_08(2017 Q1).csv", "test_2017_09(2017 Q1).csv", "test_2017_10(2017 Q1).csv",
 "test_2017_11(2017 Q1).csv", "test_2017_12(2017 Q1).csv", "test_2018_01(2017 Q1).csv", "test_2018_02(2017 Q1).csv", "test_2018_03(2017 Q1).csv", "test_2018_04(2017 Q1).csv", "test_2018_05(2017 Q1).csv", "test_2018_06(2017 Q1).csv", "test_2018_07(2018 Q1).csv", "test_2018_08(2018 Q1).csv", "test_2018_09(2018 Q1).csv", "test_2018_10(2018 Q1).csv", "test_2018_11(2018 Q1).csv", "test_2018_12(2018 Q1).csv", "test_2019_01(2018 Q1).csv", "test_2019_02(2018 Q1).csv", "test_2019_03(2018 Q1).csv", "test_2019_04(2018 Q1).csv", "test_2019_05(2018 Q1).csv",
-"test_2019_06(2018 Q1).csv", "test_2019_07(2019 Q1).csv", "test_2019_08(2019 Q1).csv", "test_2019_09(2019 Q1).csv", "test_2019_10(2019 Q1).csv", "test_2019_11(2019 Q1).csv", "test_2019_12(2019 Q1).csv"};
+"test_2019_06(2018 Q1).csv", "test_2019_07(2019 Q1).csv", "test_2019_08(2019 Q1).csv", "test_2019_09(2019 Q1).csv", "test_2019_10(2019 Q1).csv", "test_2019_11(2019 Q1).csv", "test_2019_12(2019 Q1).csv" };
 string HH_testDJI[] = { "test_2010_Q1-Q2(2009 Q1).csv", "test_2010_Q3-Q4(2009 Q1).csv", "test_2011_Q1-Q2(2010 Q1).csv", "test_2011_Q3-Q4(2010 Q1).csv", "test_2012_Q1-Q2(2011 Q1).csv", "test_2012_Q3-Q4(2011 Q1).csv", "test_2013_Q1-Q2(2012 Q1).csv", "test_2013_Q3-Q4(2012 Q1).csv", "test_2014_Q1-Q2(2013 Q1).csv", "test_2014_Q3-Q4(2013 Q1).csv", "test_2015_Q1-Q2(2014 Q1).csv", "test_2015_Q3-Q4(2014 Q1).csv", "test_2016_Q1-Q2(2015 Q1).csv", "test_2016_Q3-Q4(2015 Q1).csv", "test_2017_Q1-Q2(2016 Q1).csv", "test_2017_Q3-Q4(2016 Q1).csv", "test_2018_Q1-Q2(2017 Q1).csv", "test_2018_Q3-Q4(2017 Q1).csv", "test_2019_Q1-Q2(2018 Q1).csv", "test_2019_Q3-Q4(2018 Q1).csv" };
 string H2H_testDJI[] = { "test_2010_Q1-Q2(2009 Q1).csv", "test_2010_Q3-Q4(2010 Q1).csv", "test_2011_Q1-Q2(2010 Q1).csv", "test_2011_Q3-Q4(2011 Q1).csv", "test_2012_Q1-Q2(2011 Q1).csv", "test_2012_Q3-Q4(2012 Q1).csv", "test_2013_Q1-Q2(2012 Q1).csv", "test_2013_Q3-Q4(2013 Q1).csv", "test_2014_Q1-Q2(2013 Q1).csv", "test_2014_Q3-Q4(2014 Q1).csv", "test_2015_Q1-Q2(2014 Q1).csv", "test_2015_Q3-Q4(2015 Q1).csv", "test_2016_Q1-Q2(2015 Q1).csv","test_2016_Q3-Q4(2016 Q1).csv", "test_2017_Q1-Q2(2016 Q1).csv", "test_2017_Q3-Q4(2017 Q1).csv", "test_2018_Q1-Q2(2017 Q1).csv", "test_2018_Q3-Q4(2018 Q1).csv", "test_2019_Q1-Q2(2018 Q1).csv", "test_2019_Q3-Q4(2019 Q1).csv" };
 /*道瓊30測試期*/
@@ -447,7 +450,7 @@ string H2M_train50[] = { "train_2015_07-12(2015 Q1).csv", "train_2015_08~2016_01
 "train_2017_01-06(2017 Q1).csv", "train_2017_02-07(2017 Q1).csv", "train_2017_03-08(2017 Q1).csv", "train_2017_04-09(2017 Q1).csv", "train_2017_05-10(2017 Q1).csv", "train_2017_06-11(2017 Q1).csv", "train_2017_07-12(2017 Q1).csv", "train_2017_08~2018_01(2017 Q1).csv", "train_2017_09~2018_02(2017 Q1).csv", "train_2017_10~2018_03(2017 Q1).csv", "train_2017_11~2018_04(2017 Q1).csv", "train_2017_12~2018_05(2017 Q1).csv", "train_2018_01-06(2018 Q1).csv",
 "train_2018_02-07(2018 Q1).csv", "train_2018_03-08(2018 Q1).csv", "train_2018_04-09(2018 Q1).csv", "train_2018_05-10(2018 Q1).csv", "train_2018_06-11(2018 Q1).csv", "train_2018_07-12(2018 Q1).csv", "train_2018_08~2019_01(2018 Q1).csv", "train_2018_09~2019_02(2018 Q1).csv", "train_2018_10~2019_03(2018 Q1).csv", "train_2018_11~2019_04(2018 Q1).csv", "train_2018_12~2019_05(2018 Q1).csv", "train_2019_01-06(2019 Q1).csv", "train_2019_02-07(2019 Q1).csv",
 "train_2019_03-08(2019 Q1).csv", "train_2019_04-09(2019 Q1).csv", "train_2019_05-10(2019 Q1).csv", "train_2019_06-11(2019 Q1).csv" };
-string HH_train50[] = {  "train_2015_Q1-Q2(2015 Q1).csv", "train_2015_Q3-Q4(2015 Q1).csv", "train_2016_Q1-Q2(2016 Q1).csv", "train_2016_Q3-Q4(2016 Q1).csv", "train_2017_Q1-Q2(2017 Q1).csv", "train_2017_Q3-Q4(2017 Q1).csv", "train_2018_Q1-Q2(2018 Q1).csv", "train_2018_Q3-Q4(2018 Q1).csv" };
+string HH_train50[] = { "train_2015_Q1-Q2(2015 Q1).csv", "train_2015_Q3-Q4(2015 Q1).csv", "train_2016_Q1-Q2(2016 Q1).csv", "train_2016_Q3-Q4(2016 Q1).csv", "train_2017_Q1-Q2(2017 Q1).csv", "train_2017_Q3-Q4(2017 Q1).csv", "train_2018_Q1-Q2(2018 Q1).csv", "train_2018_Q3-Q4(2018 Q1).csv" };
 string H2H_train50[] = { "train_2015_Q3-Q4(2015 Q1).csv", "train_2016_Q1-Q2(2016 Q1).csv","train_2016_Q3-Q4(2016 Q1).csv","train_2017_Q1-Q2(2017 Q1).csv", "train_2017_Q3-Q4(2017 Q1).csv", "train_2018_Q1-Q2(2018 Q1).csv", "train_2018_Q3-Q4(2018 Q1).csv", "train_2019_Q1-Q2(2019 Q1).csv" };
 /*市值前50大訓練期*/
 
@@ -481,9 +484,17 @@ string HH_test50[] = { "test_2016_Q1-Q2(2015 Q1).csv", "test_2016_Q3-Q4(2015 Q1)
 string H2H_test50[] = { "test_2016_Q1-Q2(2015 Q1).csv","test_2016_Q3-Q4(2016 Q1).csv", "test_2017_Q1-Q2(2016 Q1).csv", "test_2017_Q3-Q4(2017 Q1).csv", "test_2018_Q1-Q2(2017 Q1).csv", "test_2018_Q3-Q4(2018 Q1).csv", "test_2019_Q1-Q2(2018 Q1).csv", "test_2019_Q3-Q4(2019 Q1).csv" };
 /*市值前50大測試期*/
 
+double all_single_trend_ratio[file_num][partical_num];//每個區間排序後的單檔趨勢值
+double all_all_trend_ratio[file_num][partical_num];//未排序後各區間單檔趨勢值
+double single_trend_ratio[partical_num];
+string all_stock_no[file_num][partical_num];
+double all_single_m[file_num][partical_num];
+double all_single_risk[file_num][partical_num];
+
+
 void read_file(int a) {
-	input_file.open(H2M_trainDJI[a], ios::in);
-	cout << endl << H2M_trainDJI[a] << endl;
+	input_file.open(HH_train50[a], ios::in);
+	cout << endl << HH_train50[a] << endl;
 	string line;
 	while (getline(input_file, line))
 	{
@@ -517,13 +528,13 @@ void read_file(int a) {
 	}
 	input_file.close();
 	day = index - 1;
-	cout << day;
+	//cout << day;
 }//讀檔
 
 void test_read_file(int a) {
 
-	test_input_file.open(H2M_testDJI[a], ios::in);
-	cout << endl << H2M_testDJI[a] << endl;
+	test_input_file.open(HH_test50[a], ios::in);
+	cout << endl << HH_test50[a] << endl;
 	string test_line;
 	while (getline(test_input_file, test_line))
 	{
@@ -598,6 +609,34 @@ void  measure()
 
 	}
 }
+
+void single_stock()
+{
+	int s_tmp = 0;
+	for (int i = 0; i < partical_num; i++)
+	{
+		n[i] = 0;
+		for (int s = 0; s < s_stock_index; s++)
+		{
+			partical[i][s] = 0;
+			if (i == s)
+			{
+				partical[i][s] = 1;
+			}
+			else partical[i][s] = 0;
+
+			if (partical[i][s] == 1)
+			{
+				stock_index[i][n[i]] = s;
+				//cout << stock_no[stock_index[i][n[i]]] << endl; //股票編號
+				//cout << stock_index[i][n[i]]  << endl;//選到的股票 index
+				n[i] = n[i]++;//幾檔
+			}
+		}
+	}
+}
+/*單檔股票選擇-每個粒子選到不同的股票*/
+
 
 void standardization()
 {
@@ -854,9 +893,22 @@ void fitness()
 			trend_ratio = m[i] / risk[i];//趨勢值
 		}
 		all_trend_ratio[i] = trend_ratio;
+		//cout << trend_ratio << endl;
+		//cout << fixed << setprecision(10) << all_trend_ratio[i] << endl;
 	}
 
 }
+
+void single_compare()
+{
+	
+	for (int i = 0; i < partical_num; i++)
+	{
+		single_trend_ratio[i] = all_trend_ratio[i];
+	}
+	sort(single_trend_ratio, single_trend_ratio + partical_num, greater<double>());
+}
+/*單檔趨勢值由大到小排序*/
 
 void compare()
 {
@@ -1029,7 +1081,7 @@ void out_file(int a)
 {
 	if (Gbest_max > 0)
 	{
-		string ouput_file = "Larry_result_" + H2M_trainDJI[a].substr(0, H2M_trainDJI[a].length());//輸出檔案名稱
+		string ouput_file = "Larry_result_" + HH_train50[a].substr(0, HH_train50[a].length());//輸出檔案名稱
 		output_file.open(ouput_file, ios::app);//檔案輸出
 		output_file << "代數" << "," << generation << endl;
 		output_file << "粒子數" << "," << partical_num << endl;
@@ -1102,7 +1154,7 @@ void test_out_file(int a)
 {
 	if (Gbest_max > 0)
 	{
-		string ouput_file = "Larry_result_" + H2M_testDJI[a].substr(0, H2M_testDJI[a].length());//輸出檔案名稱
+		string ouput_file = "Larry_result_" + HH_test50[a].substr(0, HH_test50[a].length());//輸出檔案名稱
 		output_file.open(ouput_file, ios::app);//檔案輸出
 		output_file << "代數" << "," << generation << endl;//v
 		output_file << "粒子數" << "," << partical_num << endl;//v
@@ -1207,9 +1259,9 @@ void test_out_file(int a)
 
 void all_testperiod_final_result()
 {
-	string ouput_file = "Larry_DJI30_H2M_total_test_result.csv";//輸出檔案名稱
+	string ouput_file = "Larry_US50_H#_total_test_result.csv";//輸出檔案名稱
 	output_file.open(ouput_file, ios::app);//檔案輸出
-	output_file << "測試期區間" << "," << "test_2013_01(2012 Q1).csv - test_2019_12(2019 Q1).csv" << endl;
+	output_file << "測試期區間" << "," << "test_2016_Q1-Q2(2015 Q1).csv - test_2019_Q3-Q4(2018 Q1).csv" << endl;
 	output_file << "世代數" << "," << generation << endl;
 	output_file << "旋轉角度" << "," << theta << endl;
 	output_file << "粒子數" << "," << partical_num << endl;
@@ -1241,7 +1293,7 @@ void all_testperiod_final_result()
 
 void all_train_prtiod_result(int a)
 {
-	string ouput_file = "Larry_DJI30_H2M_train_Gbest_10000_10_50_0.0004.csv";//輸出檔案名稱
+	string ouput_file = "Larry_US50_H#_train_Gbest_10000_10_50_0.0004.csv";//輸出檔案名稱
 	output_file.open(ouput_file, ios::app);
 
 	if (all_gbest_trend_ratio[a] > 0)
@@ -1279,6 +1331,30 @@ void all_train_prtiod_result(int a)
 
 }
 
+void single_output(int a)
+{
+	string ouput_file = "Larry_US50_H#_train_single_result.csv";//輸出檔案名稱
+	output_file.open(ouput_file, ios::app);
+	output_file << "File" << "," << "Rank" << "," << "Stock" << endl;
+	for (int i = 0; i < partical_num; i++)
+	{
+			output_file << a + 1 << ",";
+			output_file << i + 1 << ",";
+			for (int u = 0; u < partical_num; u++)
+			{
+				if (all_single_trend_ratio[a][i] == all_all_trend_ratio[a][u])
+				{
+					if (all_single_trend_ratio[a][i] != 0)
+					{
+						output_file << all_stock_no[a][u] << "," << "趨勢值" << "," << fixed << setprecision(15) << all_single_trend_ratio[a][i];
+						output_file << "," << "預期報酬" << "," << fixed << setprecision(15) << all_single_m[a][u] << "," << "風險" << "," << fixed << setprecision(15) << all_single_risk[a][u];
+					}
+				}
+			}
+			output_file << endl;
+		}
+	output_file.close();
+}
 int main()
 {
 	srand(114);
@@ -1295,18 +1371,27 @@ int main()
 			initial();
 			for (int t = 0; t < generation; t++)
 			{
-				measure();
+				//measure();
+				single_stock();
 				standardization();
 				fitness();
-				compare();
+				single_compare();
+				//compare();
 				for (int i = 0; i < partical_num; i++)
 				{
+					all_stock_no[a][i] = '/0';
 					real_all_trend_ratio[j][t][i] = all_trend_ratio[i];
 					daily_risk[j][t][i] = risk[i];
 					expect_m[j][t][i] = m[i];
 					final_n[j][t][i] = n[i];
 					compare_share_money[j][t][i] = all_share_money[i];
-
+					
+						all_all_trend_ratio[a][i] = all_trend_ratio[i];
+						all_single_trend_ratio[a][i] = single_trend_ratio[i];
+						all_stock_no[a][i] = stock_no[i];
+						all_single_m[a][i] = m[i];
+						all_single_risk[a][i] = risk[i];
+					
 					for (int s = 0; s < s_stock_index; s++)
 					{
 						real_partical[j][i][s] = partical[i][s];//Think
@@ -1349,6 +1434,7 @@ int main()
 
 		}
 		test_standardization(a);
+		single_output(a);
 		test_fitness();
 		all_test_return();//總體測試期預期報酬計算
 		test_out_file(a);//測試期檔案輸出
