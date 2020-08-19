@@ -20,10 +20,10 @@ int index;
 int test_index;
 //read_file
 
-const int partical_num = 50;
-const int generation = 1;
-const int experiment_time = 1;
-const int file_num = 8;
+const int partical_num = 10;
+const int generation = 10000;
+const int experiment_time = 50;
+const int file_num = 48;
 double beta[50];
 int partical[partical_num][90000];
 //int profolio[50];//投資組合
@@ -164,14 +164,19 @@ double final_test_r1;
 int day_count_risk;//總體測試期計算風險天數counter
 int day_count_result;//總體測試期輸出結果天數counter
 
-double all_file_gbest_risk[200];
-double all_file_gbest_return[200];
+double all_file_gbest_risk[200];//訓練期各區間風險
+double all_file_gbest_return[200];//訓練期各區間預期報酬
+double all_file_test_return[200];//測試期個區間預期報酬
+double all_file_test_risk[200];//測試期各區間風險
+
 int all_file_gbest_num[200];
 int all_file_gbest_generation[200];
 int all_file_gbest_experiment[200];
 int all_file_gbest_appear[200];
 double all_gbest_trend_ratio[200];
+double all_test_period_trend_ratio[200];
 string all_file_gbest_portfolio[200][50];
+string all_file_test_portfolio[200][50];
 
 string AAPL[] = { "AAPL-2012.csv", "AAPL-2013.csv", "AAPL-2014.csv", "AAPL-2015.csv", "AAPL-2016.csv", "AAPL-2017.csv", "AAPL-2018.csv", "AAPL-2019.csv" };
 string AMZN[] = { "AMZN-2012.csv", "AMZN-2013.csv", "AMZN-2014.csv", "AMZN-2015.csv", "AMZN-2016.csv", "AMZN-2017.csv", "AMZN-2018.csv", "AMZN-2019.csv" };
@@ -490,11 +495,17 @@ double single_trend_ratio[partical_num];
 string all_stock_no[file_num][partical_num];
 double all_single_m[file_num][partical_num];
 double all_single_risk[file_num][partical_num];
+double average_risk = 0;
+double average_return = 0;
+double average_trend_ratio = 0;
+double total_return = 0;
+double total_risk = 0;
+double total_trend_ratio = 0;
 
 
 void read_file(int a) {
-	input_file.open(HH_train50[a], ios::in);
-	cout << endl << HH_train50[a] << endl;
+	input_file.open(MM_train50[a], ios::in);
+	cout << endl << MM_train50[a] << endl;
 	string line;
 	while (getline(input_file, line))
 	{
@@ -533,8 +544,8 @@ void read_file(int a) {
 
 void test_read_file(int a) {
 
-	test_input_file.open(HH_test50[a], ios::in);
-	cout << endl << HH_test50[a] << endl;
+	test_input_file.open(MM_test50[a], ios::in);
+	cout << endl << MM_test50[a] << endl;
 	string test_line;
 	while (getline(test_input_file, test_line))
 	{
@@ -820,7 +831,7 @@ void all_test_risk()
 	cout << "整體趨勢值: " << final_test_trend_ratio << endl;
 }
 
-void test_fitness()//計算測試期各區間趨勢值
+void test_fitness(int a)//計算測試期各區間趨勢值
 {
 	double test_m1 = 0;
 	double test_m2 = 0;
@@ -832,7 +843,7 @@ void test_fitness()//計算測試期各區間趨勢值
 	}
 
 	test_m = test_m1 / test_m2;//v
-
+	all_file_test_return[a] = test_m;
 
 	double test_r1 = 0;
 
@@ -843,7 +854,7 @@ void test_fitness()//計算測試期各區間趨勢值
 		test_r1 += ((test_yi[k] - test_Yi[k]) * (test_yi[k] - test_Yi[k]));//(yi-Yi)
 	}
 	test_risk = sqrt(test_r1 / (test_day));//風險
-
+	all_file_test_risk[a] = test_risk;
 	if (test_m < 0)
 	{
 		test_trend_ratio = test_m * test_risk;
@@ -852,6 +863,8 @@ void test_fitness()//計算測試期各區間趨勢值
 	{
 		test_trend_ratio = test_m / test_risk;//趨勢值
 	}
+
+	all_test_period_trend_ratio[a] = test_trend_ratio;
 }
 
 void fitness()
@@ -1056,23 +1069,24 @@ void Gbest_stock_selection()
 {
 	for (int j = 0; j < experiment_time; j++)
 	{
-		for (int t = 0; t < generation; t++)
-		{
+
 			for (int i = 0; i < partical_num; i++)
 			{
 				for (int s = 0; s < s_stock_index; s++)
 				{
 					final_portfolio[s] = "\0";
 					//cout << real_partical[j][i][s] << endl;
-					if (real_partical[best_experimrentime - 1][i][s] == 1)
+					if (partical[max_fitness_tmp][s] == 1)
 					{
 						final_portfolio[s] = stock_no[s];//Gbest投資組合中
 						train_stock_index[s] = s;
+						//cout << final_portfolio[s] << endl;
 					}
+					//return;
 				}
 				return;
 			}
-		}
+		
 	}
 }
 
@@ -1081,7 +1095,7 @@ void out_file(int a)
 {
 	if (Gbest_max > 0)
 	{
-		string ouput_file = "Larry_result_" + HH_train50[a].substr(0, HH_train50[a].length());//輸出檔案名稱
+		string ouput_file = "Larry_result_" + MM_train50[a].substr(0, MM_train50[a].length());//輸出檔案名稱
 		output_file.open(ouput_file, ios::app);//檔案輸出
 		output_file << "代數" << "," << generation << endl;
 		output_file << "粒子數" << "," << partical_num << endl;
@@ -1154,7 +1168,7 @@ void test_out_file(int a)
 {
 	if (Gbest_max > 0)
 	{
-		string ouput_file = "Larry_result_" + HH_test50[a].substr(0, HH_test50[a].length());//輸出檔案名稱
+		string ouput_file = "Larry_result_" + MM_test50[a].substr(0, MM_test50[a].length());//輸出檔案名稱
 		output_file.open(ouput_file, ios::app);//檔案輸出
 		output_file << "代數" << "," << generation << endl;//v
 		output_file << "粒子數" << "," << partical_num << endl;//v
@@ -1259,9 +1273,9 @@ void test_out_file(int a)
 
 void all_testperiod_final_result()
 {
-	string ouput_file = "Larry_US50_H#_total_test_result.csv";//輸出檔案名稱
+	string ouput_file = "Larry_50_M#_total_test_result.csv";//輸出檔案名稱
 	output_file.open(ouput_file, ios::app);//檔案輸出
-	output_file << "測試期區間" << "," << "test_2016_Q1-Q2(2015 Q1).csv - test_2019_Q3-Q4(2018 Q1).csv" << endl;
+	output_file << "測試期區間" << "," << "test_2016_01(2015 Q1).csv - test_2019_12(2018 Q1).csv" << endl;
 	output_file << "世代數" << "," << generation << endl;
 	output_file << "旋轉角度" << "," << theta << endl;
 	output_file << "粒子數" << "," << partical_num << endl;
@@ -1293,7 +1307,7 @@ void all_testperiod_final_result()
 
 void all_train_prtiod_result(int a)
 {
-	string ouput_file = "Larry_US50_H#_train_Gbest_10000_10_50_0.0004.csv";//輸出檔案名稱
+	string ouput_file = "Larry_50_M#_train_Gbest_10000_10_50_0.0004.csv";//輸出檔案名稱
 	output_file.open(ouput_file, ios::app);
 
 	if (all_gbest_trend_ratio[a] > 0)
@@ -1331,9 +1345,55 @@ void all_train_prtiod_result(int a)
 
 }
 
+void testing_period(int a)
+{
+	
+	string ouput_file = "Larry_50_M#_test_Gbest_10000_10_50_0.0004.csv";//輸出檔案名稱
+	output_file.open(ouput_file, ios::app);
+
+	
+		output_file << a + 1 << "," << all_file_gbest_num[a] << ",";
+		for (int s = 0; s < s_stock_index; s++)
+		{
+			if (all_file_test_portfolio[a][s] != "\0")
+			{
+				output_file << all_file_test_portfolio[a][s] << "(" << s << ") " << " ";
+			}
+		}
+		output_file << ",";
+		output_file << "Gbest" << "," << fixed << setprecision(20) << all_test_period_trend_ratio[a] << ",";
+		output_file << "預期報酬" << "," << fixed << setprecision(20) << all_file_test_return[a] << ",";
+		output_file << "風險" << "," << fixed << setprecision(20) << all_file_test_risk[a] << ",";
+		output_file << endl;
+        
+		if (all_gbest_trend_ratio[a] <= 0)
+     	{
+	      output_file << a + 1 << "," << 0 << "," << 0 << ",";
+	      output_file << "Gbest" << "," << 0 << ",";
+	      output_file << "預期報酬" << "," << 0 << ",";
+	      output_file << "風險" << "," << 0 << ",";
+	      output_file << endl;
+	    }
+		total_return += all_file_test_return[a];
+		total_risk += all_file_test_risk[a];
+		total_trend_ratio += all_test_period_trend_ratio[a];
+
+		average_return = total_return / file_num;
+		average_risk = total_risk / file_num;
+		average_trend_ratio = total_trend_ratio / file_num;
+		if (a == file_num - 1)
+		{
+			output_file << "平均" << "," << "," << ", " << "," << fixed << setprecision(20) << average_trend_ratio << "," << ",";
+			output_file << fixed << setprecision(20) << average_return << "," << ",";
+			output_file << fixed << setprecision(20) << average_risk;
+		}
+	output_file.close();
+}
+
+
 void single_output(int a)
 {
-	string ouput_file = "Larry_US50_H#_train_single_result.csv";//輸出檔案名稱
+	string ouput_file = "Larry_US20_Q2Q_train_single_result.csv";//輸出檔案名稱
 	output_file.open(ouput_file, ios::app);
 	output_file << "File" << "," << "Rank" << "," << "Stock" << endl;
 	for (int i = 0; i < partical_num; i++)
@@ -1371,12 +1431,12 @@ int main()
 			initial();
 			for (int t = 0; t < generation; t++)
 			{
-				//measure();
-				single_stock();
+				measure();
+				//single_stock();
 				standardization();
 				fitness();
-				single_compare();
-				//compare();
+				//single_compare();//單檔趨勢值排序
+				compare();
 				for (int i = 0; i < partical_num; i++)
 				{
 					all_stock_no[a][i] = '/0';
@@ -1395,7 +1455,10 @@ int main()
 					for (int s = 0; s < s_stock_index; s++)
 					{
 						real_partical[j][i][s] = partical[i][s];//Think
+						//cout << real_partical[j][i][s];
+			      
 					}
+					//cout << endl;
 
 					for (int k = 0; k < n[i]; k++)
 					{
@@ -1434,8 +1497,8 @@ int main()
 
 		}
 		test_standardization(a);
-		single_output(a);
-		test_fitness();
+		//single_output(a);//單檔投資組合輸出
+		test_fitness(a);
 		all_test_return();//總體測試期預期報酬計算
 		test_out_file(a);//測試期檔案輸出
 		all_file_gbest_risk[a] = Gbest_daily_risk;
@@ -1451,8 +1514,17 @@ int main()
 			{
 				all_file_gbest_portfolio[a][s] = final_portfolio[s];
 			}
+			for (int v = 0; v < test_stock_index; v++)
+			{
+				if (final_portfolio[s] != "/0" && test_stock_no[v] == final_portfolio[s])
+				{
+					all_file_test_portfolio[a][s] = test_stock_no[s];
+				}
+			}
 		}
 		all_train_prtiod_result(a);
+		testing_period(a);//測試期各區間輸出
+
 	}
 
 	all_test_risk();//總體測試期風險計算
