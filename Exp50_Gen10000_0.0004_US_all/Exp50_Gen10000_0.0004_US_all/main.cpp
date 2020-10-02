@@ -23,7 +23,7 @@ int test_index;
 const int partical_num = 10;
 const int generation = 10000;
 const int experiment_time = 50;
-const int file_num = 48;
+const int file_num = 7;
 double beta[50];
 int partical[partical_num][90000];
 //int profolio[50];//投資組合
@@ -501,6 +501,7 @@ double average_trend_ratio = 0;
 double total_return = 0;
 double total_risk = 0;
 double total_trend_ratio = 0;
+int final_max_tmp[50];//記最好的投資組合出現的粒子
 
 
 void read_file(int a) {
@@ -923,7 +924,7 @@ void single_compare()
 }
 /*單檔趨勢值由大到小排序*/
 
-void compare()
+void compare(int j)
 {
 	max_fitness = all_trend_ratio[0];//如果這邊設成0,找到的不一定是當代粒子的最大值。(如果當代粒子都是負的)
 	max_fitness_tmp = 0;
@@ -991,6 +992,7 @@ void compare()
 			}
 		}
 	}
+	final_max_tmp[j] = max_fitness_tmp;
 }
 
 void experiment_compre() /*50次實驗Gbest比較,並找出Gbest的實驗數*/
@@ -1069,23 +1071,22 @@ void Gbest_stock_selection()
 {
 	for (int j = 0; j < experiment_time; j++)
 	{
+		if (j == best_experimrentime - 1)
+		{
 
-			for (int i = 0; i < partical_num; i++)
+			for (int s = 0; s < s_stock_index; s++)
 			{
-				for (int s = 0; s < s_stock_index; s++)
+				final_portfolio[s] = "\0";
+				//cout << real_partical[j][i][s] << endl;
+				if (real_partical[j][final_max_tmp[best_experimrentime - 1]][s] == 1)
 				{
-					final_portfolio[s] = "\0";
-					//cout << real_partical[j][i][s] << endl;
-					if (partical[max_fitness_tmp][s] == 1)
-					{
-						final_portfolio[s] = stock_no[s];//Gbest投資組合中
-						train_stock_index[s] = s;
-						//cout << final_portfolio[s] << endl;
-					}
-					//return;
+					final_portfolio[s] = stock_no[s];//Gbest投資組合中
+					train_stock_index[s] = s;
+	
 				}
-				return;
 			}
+				return;
+		}
 		
 	}
 }
@@ -1436,7 +1437,7 @@ int main()
 				standardization();
 				fitness();
 				//single_compare();//單檔趨勢值排序
-				compare();
+				compare(j);
 				for (int i = 0; i < partical_num; i++)
 				{
 					all_stock_no[a][i] = '/0';
